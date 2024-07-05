@@ -20,11 +20,11 @@ def calculate_joint_velocities(amass_data_path):
             velocities[frame, i] = (euler_values2 - euler_values1) / (2 * t)
 
     # Calculate velocity for the first frame
-    for i in range(num_joints):
+    for i in range(num_joints): #v1 = (v2 + v0) / 2, so v0 = 2v1 - v2
         velocities[0, i] = 2 * velocities[1, i] - velocities[2, i]
 
     # Calculate velocity for the last frame
-    for i in range(num_joints):
+    for i in range(num_joints): #v1 = (v2 + v0) / 2, so v2 = 2v1 - v0
         velocities[num_frames - 1, i] = 2 * velocities[num_frames - 2, i] - velocities[num_frames - 3, i]
 
     return velocities
