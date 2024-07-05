@@ -23,7 +23,7 @@ joint_names = [
     "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3"
 ]
 
-# The armature is a SMPL-X add-on in pose mode in Blender
+# Make sure the armature is a SMPL-X add-on in pose mode in Blender
 armature_name = 'SMPLX-female'
 armature = bpy.data.objects.get(armature_name)
 bpy.ops.object.mode_set(mode='POSE')
