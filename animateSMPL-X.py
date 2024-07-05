@@ -10,7 +10,8 @@ pose_body = amass_data['poses']  #55 joints of SMPL-X
 num_frames = pose_body.shape[0]
 print(pose_body.shape)  # shape (2751, 165) for 'poses' and (2751, 63) for 'pose_body'
 
-# Joint names and their corresponding indices in SMPL-X. e.g. "pelvis" is 0th joint in amass "poses"
+#Joint names and their corresponding indices in SMPL-X. e.g. "pelvis" is 0th joint in amass "poses"
+#https://github.com/vchoutas/smplx/blob/main/smplx/joint_names.py
 joint_names = [
     "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2",
     "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar",
