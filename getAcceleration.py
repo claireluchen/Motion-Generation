@@ -27,6 +27,9 @@ def calculate_joint_accelerations(amass_data_path):
     for i in range(num_joints):
         accelerations[num_frames - 1, i] = 2 * accelerations[num_frames - 2, i] - accelerations[num_frames - 3, i]
 
+    # Reshape the acceleration array to have shape (num_frames, 165)
+    accelerations = accelerations.reshape(num_frames, -1)
+    
     return accelerations
 
 #example usage:
