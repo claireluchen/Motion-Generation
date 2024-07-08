@@ -27,6 +27,9 @@ def calculate_joint_velocities(amass_data_path):
     for i in range(num_joints): #v1 = (v2 + v0) / 2, so v2 = 2v1 - v0
         velocities[num_frames - 1, i] = 2 * velocities[num_frames - 2, i] - velocities[num_frames - 3, i]
 
+    # Reshape the velocities array to have shape (num_frames, 165)
+    velocities = velocities.reshape(num_frames, -1)
+    
     return velocities
 
 #example usage:
