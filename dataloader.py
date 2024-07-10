@@ -13,9 +13,9 @@ def getFrameBoundaries(npz_files):
         frames.append((idx, idx + curNumFrames - 1))
         idx += curNumFrames
     
-    return frames
+    return frames # return [(0, 2750), (2751, 7096), (7097, 11606) ...]
 
-
+#input is two consecutive frames, output is the third
 class PoseDataset(Dataset):
     def __init__(self, csv_file_path, frame_boundaries):
         self.data = np.loadtxt(csv_file_path, delimiter=',')
@@ -23,19 +23,19 @@ class PoseDataset(Dataset):
         self.frame_boundaries = frame_boundaries
         
         # number of samples, last valid idx == num_samples - 1
-        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries)
-
+        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) - 2
 
         bounds = set()
         for start, end in self.frame_boundaries:
             bounds.add(end)
+            bounds.add(end - 1)
 
         # csv[i] maps idx given by user to row number of the csv data
         self.csv = {}
         idxCounter = 0
         rowCounter = 0
-        lastIdx = frame_boundaries[-1][1]- len(frame_boundaries)
-        lastRow = frame_boundaries[-1][1]
+        lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) - 2
+        lastRow = frame_boundaries[-1][1] - 2
         while idxCounter <= lastIdx and rowCounter <= lastRow:
             if rowCounter in bounds:
                 rowCounter += 1
@@ -50,14 +50,15 @@ class PoseDataset(Dataset):
     def __getitem__(self, idx):
         if idx >= len(self.csv):
             raise IndexError("Index out of range of dataset boundaries")
-        i = self.csv[idx];
-        input_frame = self.data[i];
-        output_frame = self.data[i + 1];
+        i = self.csv[idx]
+        input_frame = np.concatenate((self.data[i], self.data[i + 1]))
+        output_frame = self.data[i + 2]
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
         output_frame = torch.tensor(output_frame, dtype=torch.float32)
-                
+        
         return input_frame, output_frame, idx
+
 
 # path to the CSV file
 csv_file_path = 'D:/Claire/CMUsmplx/CMU/01/merged_poses.csv'
@@ -83,7 +84,7 @@ pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=False)
 
 # Example usage: iterate over the dataloader
 for input_frame, output_frame,idx in pose_dataloader:
-    # pass input_frame to your neural network and use output_frame for the target
+    #pass input_frame to your neural network and use output_frame for the target
     print("Input frame:", input_frame[0,:])
     print("Output frame:", output_frame[0,:])
     print(idx)
