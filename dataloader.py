@@ -12,30 +12,32 @@ def getFrameBoundaries(npz_files):
         curNumFrames = np.shape(data['poses'])[0]
         frames.append((idx, idx + curNumFrames - 1))
         idx += curNumFrames
-    
+
     return frames # return [(0, 2750), (2751, 7096), (7097, 11606) ...]
 
-#input is two consecutive frames, output is the third
+#input is n consecutive frames, output is the next
 class PoseDataset(Dataset):
-    def __init__(self, csv_file_path, frame_boundaries):
+    def __init__(self, csv_file_path, frame_boundaries, n):
         self.data = np.loadtxt(csv_file_path, delimiter=',')
         print("data shape is: " + str(np.shape(self.data)))
         self.frame_boundaries = frame_boundaries
+        #input is n consecutive frames
+        self.n = n 
         
         # number of samples, last valid idx == num_samples - 1
-        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) * 2
+        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) * n
 
         bounds = set()
         for start, end in self.frame_boundaries:
-            bounds.add(end)
-            bounds.add(end - 1)
+            for i in range(n):
+                bounds.add(end - i)
 
         # csv[i] maps idx given by user to row number of the csv data
         self.csv = {}
         idxCounter = 0
         rowCounter = 0
-        lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) * 2
-        lastRow = frame_boundaries[-1][1] - 2
+        lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) * n
+        lastRow = frame_boundaries[-1][1] - n
         while idxCounter <= lastIdx and rowCounter <= lastRow:
             if rowCounter in bounds:
                 rowCounter += 1
@@ -51,8 +53,8 @@ class PoseDataset(Dataset):
         if idx >= len(self.csv):
             raise IndexError("Index out of range of dataset boundaries")
         i = self.csv[idx]
-        input_frame = np.concatenate((self.data[i], self.data[i + 1]))
-        output_frame = self.data[i + 2]
+        input_frame = self.data[idx:idx + self.n].flatten()
+        output_frame = self.data[i + self.n]
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
         output_frame = torch.tensor(output_frame, dtype=torch.float32)
@@ -79,13 +81,13 @@ npz_files = [
 frame_boundaries = getFrameBoundaries(npz_files) #[(0, 2750), (2751, 7096), (7097, 11606) ...]
 
 # dataset and dataloader
-pose_dataset = PoseDataset(csv_file_path, frame_boundaries)
+pose_dataset = PoseDataset(csv_file_path, frame_boundaries, 2)
 pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=False)
 
 # Example usage: iterate over the dataloader
 for input_frame, output_frame,idx in pose_dataloader:
     #pass input_frame to your neural network and use output_frame for the target
-    print("Input frame:", input_frame[0,:])
-    print("Output frame:", output_frame[0,:])
-    print(idx)
+    # print("Input frame:", input_frame[0,:])
+    # print("Output frame:", output_frame[0,:])
+    # print(idx)
     break
