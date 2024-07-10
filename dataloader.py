@@ -23,7 +23,7 @@ class PoseDataset(Dataset):
         self.frame_boundaries = frame_boundaries
         
         # number of samples, last valid idx == num_samples - 1
-        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) - 2
+        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) * 2
 
         bounds = set()
         for start, end in self.frame_boundaries:
@@ -34,7 +34,7 @@ class PoseDataset(Dataset):
         self.csv = {}
         idxCounter = 0
         rowCounter = 0
-        lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) - 2
+        lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) * 2
         lastRow = frame_boundaries[-1][1] - 2
         while idxCounter <= lastIdx and rowCounter <= lastRow:
             if rowCounter in bounds:
@@ -56,7 +56,7 @@ class PoseDataset(Dataset):
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
         output_frame = torch.tensor(output_frame, dtype=torch.float32)
-        
+
         return input_frame, output_frame, idx
 
 
