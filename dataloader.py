@@ -12,14 +12,15 @@ def getFrameBoundaries(npz_files):
         curNumFrames = np.shape(data['poses'])[0]
         frames.append((idx, idx + curNumFrames - 1))
         idx += curNumFrames
+    
+    # print(frames) # return [(0, 2750), (2751, 7096), (7097, 11606) ...]
+    return frames
 
-    return frames # return [(0, 2750), (2751, 7096), (7097, 11606) ...]
-
-#input is n consecutive frames, output is the next
+#input is n consecutive frames, output is the following frame
 class PoseDataset(Dataset):
     def __init__(self, csv_file_path, frame_boundaries, n):
         self.data = np.loadtxt(csv_file_path, delimiter=',')
-        print("data shape is: " + str(np.shape(self.data)))
+        # print("data shape is: " + str(np.shape(self.data)))
         self.frame_boundaries = frame_boundaries
         #input is n consecutive frames
         self.n = n 
@@ -61,9 +62,12 @@ class PoseDataset(Dataset):
 
         return input_frame, output_frame, idx
 
+    def getDim(self):
+        return np.shape(self.data)
 
 # path to the CSV file
 csv_file_path = 'D:/Claire/CMUsmplx/CMU/01/merged_poses.csv'
+# csv_file_path = 'D:/Claire/CMUsmplx/CMU/01/merged_poses_with_frames.csv'
 
 # frame boundaries for each file, inclusive
 npz_files = [
@@ -79,6 +83,7 @@ npz_files = [
     'D:/Claire/CMUsmplx/CMU/01/01_11_stageii.npz',
 ]
 frame_boundaries = getFrameBoundaries(npz_files) #[(0, 2750), (2751, 7096), (7097, 11606) ...]
+
 
 # dataset and dataloader
 pose_dataset = PoseDataset(csv_file_path, frame_boundaries, 2)
