@@ -54,7 +54,7 @@ class PoseDataset(Dataset):
         if idx >= len(self.csv):
             raise IndexError("Index out of range of dataset boundaries")
         i = self.csv[idx]
-        input_frame = self.data[idx:idx + self.n].flatten()
+        input_frame = self.data[i:i + self.n].flatten()
         output_frame = self.data[i + self.n]
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
