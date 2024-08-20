@@ -51,14 +51,6 @@ class PoseDataset(Dataset):
                 rowCounter += 1
 
         self.velocities = self.calculate_joint_velocities()
-        self.accelerations = self.calculate_joint_accelerations()
-
-        # print(self.velocities[self.csv[0]])
-        # print(self.accelerations[self.csv[0]])
-        # print(self.velocities[self.csv[1]])
-        # print(self.accelerations[self.csv[1]])
-        # print(self.velocities[self.csv[2749]])
-        # print(self.accelerations[self.csv[2749]])
 
     def calculate_joint_velocities(self):
         num_frames = self.data.shape[0]
@@ -82,29 +74,6 @@ class PoseDataset(Dataset):
         velocities = velocities.reshape(num_frames, -1)
         return velocities
 
-    def calculate_joint_accelerations(self):
-        velocities = self.velocities
-        num_frames = velocities.shape[0]
-        num_joints = velocities.shape[1] // 3
-        t = 1 / 120
-        
-        accelerations = np.zeros((num_frames, num_joints, 3))
-        
-        for start, end in self.frame_boundaries:
-            for frame in range(start + 1, end):
-                for i in range(num_joints):
-                    velocity1 = velocities[frame - 1, 3 * i:3 * (i + 1)]
-                    velocity2 = velocities[frame + 1, 3 * i:3 * (i + 1)]
-                    accelerations[frame, i] = (velocity2 - velocity1) / (2 * t)
-
-            # Boundary conditions
-            for i in range(num_joints):
-                accelerations[start, i] = 2 * accelerations[start + 1, i] - accelerations[start + 2, i]
-                accelerations[end, i] = 2 * accelerations[end - 1, i] - accelerations[end - 2, i]
-
-        accelerations = accelerations.reshape(num_frames, -1)
-        return accelerations
-
     def __len__(self):
         return self.num_samples
 
@@ -117,14 +86,12 @@ class PoseDataset(Dataset):
         output_frame_2 = self.data[i + self.n + 1]
 
         input_velocity = self.velocities[i].reshape(-1)  # Flatten velocities for the specific frame
-        input_acceleration = self.accelerations[i].reshape(-1)  # Flatten accelerations for the specific frame
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
         output_frame = torch.tensor(output_frame, dtype=torch.float32)
         input_velocity = torch.tensor(input_velocity, dtype=torch.float32)
-        input_acceleration = torch.tensor(input_acceleration, dtype=torch.float32)
 
-        return input_frame, output_frame, output_frame_2, input_velocity, input_acceleration, idx
+        return input_frame, output_frame, output_frame_2, input_velocity, idx
 
     def getDim(self):
         return np.shape(self.data)
@@ -153,7 +120,7 @@ pose_dataset = PoseDataset(csv_file_path, frame_boundaries, 2)
 pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=False)
 
 # Example usage: iterate over the dataloader
-for input_frame, output_frame, output_frame_2, input_velocity, input_acceleration, idx in pose_dataloader:
+for input_frame, output_frame, output_frame_2, input_velocity, idx in pose_dataloader:
     #pass input_frame to neural network and use output_frame for the target
     print("Input frame:", input_frame)
     print("Output frame:", output_frame)
