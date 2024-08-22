@@ -40,23 +40,6 @@ class Decoder(nn.Module):
         return self.fc4(h)
 
 class VAE(nn.Module):
-    def __init__(self, input_size, hidden_size, latent_dim, output_size):
-        super(VAE, self).__init__()
-        self.encoder = Encoder(input_size, hidden_size, latent_dim)
-        self.decoder = Decoder(latent_dim, hidden_size, output_size)
-        
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return mu + eps * std
-    
-    def forward(self, x, t):
-        x = torch.cat([t, x], dim=1)  # concatenate t with x here
-        mu, logvar = self.encoder(x)
-        z = self.reparameterize(mu, logvar)
-        return self.decoder(z), mu, logvar, z
-
-class VAE(nn.Module):
     def __init__(self, input_size, hidden_size, latent_dim, output_size, n):
         super(VAE, self).__init__()
         self.n = n
