@@ -3,9 +3,9 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import os
 
+#Loads position, velocity data including frame number
 #input_frame = n consecutive frames
 #output_frame = subsequent target frame (pi+1)
-#output_frame_2 = next frame following the output_frame (pi+2)
 
 def getFrameBoundaries(npz_files):
     frames = []
@@ -23,27 +23,22 @@ def getFrameBoundaries(npz_files):
 class PoseDataset(Dataset):
     def __init__(self, csv_file_path, frame_boundaries, n):
         self.data = np.loadtxt(csv_file_path, delimiter=',')
-        # print("data shape is: " + str(np.shape(self.data)))
         self.frame_boundaries = frame_boundaries
-        #input is n consecutive frames
         self.n = n 
-        
-        # number of samples, last valid idx == num_samples - 1
-        self.num_samples = frame_boundaries[-1][1] + 1 - 2 * len(frame_boundaries) * n
 
+        self.num_samples = frame_boundaries[-1][1] + 1 - len(frame_boundaries) * n
         bounds = set()
         for start, end in self.frame_boundaries:
             for i in range(n):
                 bounds.add(end - i)
 
-        # csv[i] maps idx given by user to row number of the csv data
         self.csv = {}
         idxCounter = 0
         rowCounter = 0
         lastIdx = frame_boundaries[-1][1] - len(frame_boundaries) * n
         lastRow = frame_boundaries[-1][1] - n
         while idxCounter <= lastIdx and rowCounter <= lastRow:
-            if rowCounter in bounds or rowCounter + 1 in bounds:
+            if rowCounter in bounds:
                 rowCounter += 1
             else:
                 self.csv[idxCounter] = rowCounter
@@ -62,8 +57,8 @@ class PoseDataset(Dataset):
         for start, end in self.frame_boundaries:
             for frame in range(start + 1, end):
                 for i in range(num_joints):
-                    euler_values1 = self.data[frame - 1, 3 * i:3 * (i + 1)]
-                    euler_values2 = self.data[frame + 1, 3 * i:3 * (i + 1)]
+                    euler_values1 = self.data[frame - 1, 3 * i + 1:3 * (i + 1) + 1]
+                    euler_values2 = self.data[frame + 1, 3 * i + 1:3 * (i + 1) + 1]
                     velocities[frame, i] = (euler_values2 - euler_values1) / (2 * t)
 
             # Boundary conditions
@@ -74,6 +69,7 @@ class PoseDataset(Dataset):
         velocities = velocities.reshape(num_frames, -1)
         return velocities
 
+
     def __len__(self):
         return self.num_samples
 
@@ -81,23 +77,21 @@ class PoseDataset(Dataset):
         if idx >= len(self.csv):
             raise IndexError("Index out of range of dataset boundaries")
         i = self.csv[idx]
-        input_frame = self.data[i:i + self.n] #.flatten()
+        input_frame = self.data[i:i + self.n].flatten()
         output_frame = self.data[i + self.n]
-        output_frame_2 = self.data[i + self.n + 1]
 
-        input_velocity = self.velocities[i].reshape(-1)  # Flatten velocities for the specific frame
+        output_velocity = self.velocities[i + self.n].reshape(-1)  # Flatten velocities for the specific frame
 
         input_frame = torch.tensor(input_frame, dtype=torch.float32)
         output_frame = torch.tensor(output_frame, dtype=torch.float32)
-        input_velocity = torch.tensor(input_velocity, dtype=torch.float32)
+        output_velocity = torch.tensor(output_velocity, dtype=torch.float32)
 
-        return input_frame, output_frame, output_frame_2, input_velocity, idx
+        return input_frame, output_frame, output_velocity, idx
 
     def getDim(self):
         return np.shape(self.data)
 
-# path to the CSV file
-csv_file_path = 'D:/Claire/CMUsmplx/CMU/01/merged_poses.csv'
+csv_file_path = 'D:/Claire/CMUsmplx/CMU/01/merged_poses_with_frames_normalized.csv'
 
 # frame boundaries for each file, inclusive
 npz_files = [
@@ -120,8 +114,9 @@ pose_dataset = PoseDataset(csv_file_path, frame_boundaries, 2)
 pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=False)
 
 # Example usage: iterate over the dataloader
-for input_frame, output_frame, output_frame_2, input_velocity, idx in pose_dataloader:
-    #pass input_frame to neural network and use output_frame for the target
-    print("Input frame:", input_frame)
-    print("Output frame:", output_frame)
+for input_frame, output_frame, output_velocity, idx in pose_dataloader:
+    #pass input_frame to your neural network and use output_frame for the target
+    # print("Input frame:", input_frame[0,:])
+    # print("Output frame:", output_frame[0,:])
+    # print("Output velocity", output_velocity[0,:])
     break
