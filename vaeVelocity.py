@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from dataloader import PoseDataset, getFrameBoundaries
+from dataloaderVelocity import PoseDataset, getFrameBoundaries
 from torch.utils.data import DataLoader
 
 #Loss function implemented with velocity component in addition to position
