@@ -2,10 +2,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from dataloaderVelocity import PoseDataset, getFrameBoundaries
+from dataloader import PoseDataset, getFrameBoundaries
 from torch.utils.data import DataLoader
 
-#Loss function implemented with velocity component in addition to position
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, latent_dim):
         super(Encoder, self).__init__()
@@ -60,9 +59,10 @@ class VAE(nn.Module):
 def new_loss(output, t, X, velocity):
     # Jacobian of position output with respect to t to get velocity
     velocity_hat = torch.autograd.functional.jacobian(lambda x: output, t).squeeze(0)
-    # print(output.shape)
-    # print(velocity.shape) #torch.Size([32, 3])
-    # print("V", velocity_hat.shape) #torch.Size([32, 3, 32, 1])
+    # print("pos", output.shape) # torch.Size([32, 165])
+    # print("velocity", velocity.shape) #torch.Size([32, 165])
+    # print("vel hat", velocity_hat.shape) #torch.Size([32, 165, 32, 1])
+    # print("X", X)
 
     # Loss incorporating velocity
     loss = ((X - output) ** 2).sum() + 0.01 * ((velocity - velocity_hat) ** 2).sum() 
@@ -72,15 +72,20 @@ def train(model, dataloader, optimizer, epoch, scheduler=None):
     model.train()
     train_loss = 0
     for batch_idx, (input_frame, output_frame, input_velocity, idx) in enumerate(dataloader):
-        
+        # print(input_frame)
+        # print(input_velocity)
         optimizer.zero_grad()
 
         # Extract the time values from input_frame
         t = input_frame[:, :1]  # Extract the time/frame number (first dimension of each frame)
         t.requires_grad_()
+        # print("T", t.shape)
         
         # Exclude time values from input_frame and reshape
         x = input_frame[:, model.n:].reshape(input_frame.size(0), -1)
+        # print("X", x.shape)
+        # print("Output", output_frame[:, 1:].shape)
+        # print("V", input_velocity.shape)
 
         recon_batch, mu, logvar, z = model(x, t)
         loss = new_loss(recon_batch, t, output_frame[:, 1:], input_velocity)
@@ -112,7 +117,7 @@ if __name__ == "__main__":
     frame_boundaries = getFrameBoundaries(npz_files)
     n = 2
     pose_dataset = PoseDataset(csv_file_path, frame_boundaries, n)
-    pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=True)
+    pose_dataloader = DataLoader(pose_dataset, batch_size=32, shuffle=False)
 
     input_size = 165 * n + 1  # Joint positions and time/frame number
     hidden_size = 256
@@ -120,7 +125,7 @@ if __name__ == "__main__":
     output_size = 165  # Joint positions
 
     model = VAE(input_size, hidden_size, latent_dim, output_size, n)
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
     def init_weights(m):
